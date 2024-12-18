@@ -5,8 +5,16 @@ import { LoginForm } from './components/auth/login-form';
 import { SignupForm } from './components/auth/signup-form';
 import { EventList } from './components/events/event-list';
 import { EventForm } from './components/events/event-form';
+import { useAuthStore } from './store/auth-store';
+import type { EventData } from './types';
 
 function App() {
+  const initialize = useAuthStore((state) => state.initialize);
+
+  React.useEffect(() => {
+    initialize();
+  }, [initialize]);
+
   return (
     <Router>
       <div className="min-h-screen bg-gray-50">
@@ -50,7 +58,7 @@ function Home() {
 }
 
 function CreateEvent() {
-  const handleSubmit = async (eventData: Omit<Event, 'id' | 'createdAt' | 'attendees'>) => {
+  const handleSubmit = async (eventData: Omit<EventData, 'id' | 'createdAt' | 'attendees'>) => {
     // Simulated API call - replace with actual API implementation
     console.log('Creating event:', eventData);
     await new Promise((resolve) => setTimeout(resolve, 1000));

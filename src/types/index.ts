@@ -6,7 +6,7 @@ export interface User {
   createdAt: Date;
 }
 
-export interface Event {
+export interface EventData {
   id: string;
   title: string;
   description: string;

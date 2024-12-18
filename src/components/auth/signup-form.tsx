@@ -3,32 +3,44 @@ import { useNavigate } from 'react-router-dom';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { useAuthStore } from '../../store/auth-store';
+import { api } from '../../services/api';
 
 export function SignupForm() {
   const navigate = useNavigate();
   const login = useAuthStore((state) => state.login);
   const [error, setError] = React.useState('');
+  const [isLoading, setIsLoading] = React.useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setIsLoading(true);
+    setError('');
+
     const formData = new FormData(e.currentTarget);
     const name = formData.get('name') as string;
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
 
     try {
-      // Simulated signup - replace with actual API call
-      const user = {
-        id: '1',
+      const response = await api.post('/auth/register', {
         name,
         email,
-        membershipLevel: 'free' as const,
-        createdAt: new Date(),
-      };
+        password,
+      });
+      
+      const { user, token } = response.data;
+      
+      // Store the token
+      localStorage.setItem('token', token);
+      // Set default authorization header
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      
       login(user);
       navigate('/dashboard');
-    } catch (err) {
-      setError('Failed to create account');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to create account');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -70,8 +82,8 @@ export function SignupForm() {
           required
         />
 
-        <Button type="submit" className="w-full">
-          Create account
+        <Button type="submit" className="w-full" size="xl" disabled={isLoading}>
+          {isLoading ? 'Creating account...' : 'Create account'}
         </Button>
       </form>
     </div>

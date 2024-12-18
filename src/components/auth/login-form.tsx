@@ -3,31 +3,38 @@ import { useNavigate } from 'react-router-dom';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { useAuthStore } from '../../store/auth-store';
+import { api } from '../../services/api';
 
 export function LoginForm() {
   const navigate = useNavigate();
   const login = useAuthStore((state) => state.login);
   const [error, setError] = React.useState('');
+  const [isLoading, setIsLoading] = React.useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setIsLoading(true);
+    setError('');
+
     const formData = new FormData(e.currentTarget);
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
 
     try {
-      // Simulated login - replace with actual API call
-      const user = {
-        id: '1',
-        name: 'John Doe',
-        email,
-        membershipLevel: 'free' as const,
-        createdAt: new Date(),
-      };
+      const response = await api.post('/auth/login', { email, password });
+      const { user, token } = response.data;
+      
+      // Store the token
+      localStorage.setItem('token', token);
+      // Set default authorization header
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      
       login(user);
       navigate('/dashboard');
-    } catch (err) {
-      setError('Invalid email or password');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Invalid email or password');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -61,8 +68,8 @@ export function LoginForm() {
           required
         />
 
-        <Button type="submit" className="w-full">
-          Sign in
+        <Button type="submit" className="w-full" size="xl" disabled={isLoading}>
+          {isLoading ? 'Signing in...' : 'Sign in'}
         </Button>
       </form>
     </div>

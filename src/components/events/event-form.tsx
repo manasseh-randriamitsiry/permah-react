@@ -1,29 +1,28 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, MapPin, DollarSign, Users } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
+import type { EventData } from '../../types';
 import { useAuthStore } from '../../store/auth-store';
-import type { Event } from '../../types';
 
 interface EventFormProps {
-  event?: Event;
-  onSubmit: (event: Omit<Event, 'id' | 'createdAt' | 'attendees'>) => Promise<void>;
+  event?: EventData;
+  onSubmit: (eventData: Omit<EventData, 'id' | 'createdAt' | 'attendees'>) => Promise<void>;
 }
 
 export function EventForm({ event, onSubmit }: EventFormProps) {
   const navigate = useNavigate();
-  const user = useAuthStore((state) => state.user);
-  const [error, setError] = React.useState('');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [error, setError] = React.useState('');
+  const { user } = useAuthStore();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!user) {
+    if (!user?.id) {
       setError('You must be logged in to create an event');
       return;
     }
-
+    
     setIsSubmitting(true);
     setError('');
 
@@ -34,32 +33,23 @@ export function EventForm({ event, onSubmit }: EventFormProps) {
       date: new Date(formData.get('date') as string),
       location: formData.get('location') as string,
       imageUrl: formData.get('imageUrl') as string,
-      availablePlaces: parseInt(formData.get('availablePlaces') as string, 10),
-      price: parseFloat(formData.get('price') as string),
-      organizerId: user.id,
+      availablePlaces: Number(formData.get('availablePlaces')),
+      price: Number(formData.get('price')),
+      organizerId: user.id
     };
 
     try {
       await onSubmit(eventData);
       navigate('/events');
-    } catch (err) {
-      setError('Failed to create event. Please try again.');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to save event');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900">
-          {event ? 'Edit Event' : 'Create New Event'}
-        </h2>
-        <p className="mt-2 text-gray-600">
-          Fill in the details below to {event ? 'update your' : 'create a new'} event
-        </p>
-      </div>
-
+    <div className="mx-auto max-w-2xl">
       <form onSubmit={handleSubmit} className="space-y-6">
         {error && (
           <div className="rounded-md bg-red-50 p-4 text-sm text-red-700">
@@ -72,40 +62,32 @@ export function EventForm({ event, onSubmit }: EventFormProps) {
           name="title"
           defaultValue={event?.title}
           required
-          placeholder="e.g., Web Development Workshop"
+          placeholder="Enter event title"
         />
 
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Description
-          </label>
-          <textarea
-            name="description"
-            rows={4}
-            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-            defaultValue={event?.description}
-            required
-            placeholder="Describe your event..."
-          />
-        </div>
+        <Input
+          label="Description"
+          name="description"
+          defaultValue={event?.description}
+          required
+          placeholder="Enter event description"
+        />
 
-        <div className="grid gap-6 sm:grid-cols-2">
-          <Input
-            label="Date and Time"
-            name="date"
-            type="datetime-local"
-            defaultValue={event?.date.toISOString().slice(0, 16)}
-            required
-          />
+        <Input
+          label="Date"
+          name="date"
+          type="datetime-local"
+          defaultValue={event?.date ? new Date(event.date).toISOString().slice(0, 16) : undefined}
+          required
+        />
 
-          <Input
-            label="Location"
-            name="location"
-            defaultValue={event?.location}
-            required
-            placeholder="e.g., San Francisco, CA"
-          />
-        </div>
+        <Input
+          label="Location"
+          name="location"
+          defaultValue={event?.location}
+          required
+          placeholder="Enter event location"
+        />
 
         <Input
           label="Event Image URL"
