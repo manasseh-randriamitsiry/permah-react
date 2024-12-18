@@ -1,8 +1,9 @@
 # permah-react + backend express + orm
 
 ## starting server
+```bash
 ### start frontend
-cd permah react
+cd permah-react
 npm install
 npm start
 
@@ -13,3 +14,4 @@ npm start
 
 ## make migration
 npm run typeorm migration:generate src/migrations/CreateTables -- -d src/config/datasource.ts
+
