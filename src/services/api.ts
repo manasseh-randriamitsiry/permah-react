@@ -27,6 +27,22 @@ export const eventApi = {
   update: (id: number, eventData: Partial<EventData>) => 
     api.put<EventData>(`/events/${id}`, eventData),
   delete: (id: number) => api.delete(`/events/${id}`),
-  join: (id: number) => api.post(`/events/${id}/join`),
-  leave: (id: number) => api.delete(`/events/${id}/leave`),
+  join: async (id: number) => {
+    try {
+      const response = await api.post(`/events/${id}/join`);
+      return response.data;
+    } catch (error) {
+      console.error('Error joining event:', error);
+      throw error;
+    }
+  },
+  leave: async (id: number) => {
+    try {
+      const response = await api.delete(`/events/${id}/leave`);
+      return response.data;
+    } catch (error) {
+      console.error('Error leaving event:', error);
+      throw error;
+    }
+  },
 }; 

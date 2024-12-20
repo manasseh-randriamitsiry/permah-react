@@ -1,10 +1,10 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
-import { User } from './user.entity';
-import { EventAttendee } from '../entities/event-attendee.entity';
+import type { User } from './user.entity.js';
+import type { EventAttendee } from './event-attendee.entity.js';
 
 @Entity('events')
 export class Event {
-    @PrimaryGeneratedColumn()
+    @PrimaryGeneratedColumn('increment')
     id!: number;
 
     @Column()
@@ -29,12 +29,12 @@ export class Event {
     image_url!: string;
 
     @Column()
-    organizer_id!: string;
+    organizer_id!: number;
 
-    @ManyToOne(() => User, user => user.created_events)
+    @ManyToOne('User', 'created_events')
     creator!: User;
 
-    @OneToMany(() => EventAttendee, eventAttendee => eventAttendee.event)
+    @OneToMany('EventAttendee', 'event')
     attendees!: EventAttendee[];
 
     @CreateDateColumn()

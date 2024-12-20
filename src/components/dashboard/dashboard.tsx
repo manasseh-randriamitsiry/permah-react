@@ -63,6 +63,11 @@ export function Dashboard() {
                 const response = await eventApi.getAll();
                 setEvents(response.data.filter(e => e.organizer_id === user?.id));
               }}
+              onLeave={async () => {
+                await eventApi.leave(event.id);
+                const response = await eventApi.getAll();
+                setEvents(response.data.filter(e => e.organizer_id === user?.id));
+              }}
             />
           ))}
         </div>

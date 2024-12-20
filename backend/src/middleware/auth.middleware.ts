@@ -1,23 +1,33 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
-import { config } from '../config/env';
+import { verifyToken } from '../utils/jwt.utils.js';
+import { AuthRequest } from '../types/index.js';
 
-export const authenticateToken = (req: Request, res: Response, next: NextFunction): void => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-
-    if (!token) {
-        res.status(401).json({ message: 'No token provided' });
-        return;
+export const authenticate = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader) {
+      res.status(401).json({ message: 'No token provided' });
+      return;
     }
 
-    jwt.verify(token, config.JWT_SECRET, (err: any, user: any) => {
-        if (err) {
-            res.status(403).json({ message: 'Invalid token' });
-            return;
-        }
+    const token = authHeader.split(' ')[1];
+    if (!token) {
+      res.status(401).json({ message: 'Invalid token format' });
+      return;
+    }
 
-        (req as any).user = user;
-        next();
-    });
+    const decoded = verifyToken(token);
+    req.user = {
+      userId: decoded.userId
+    };
+
+    next();
+  } catch (error) {
+    res.status(401).json({ message: 'Invalid token' });
+  }
 };

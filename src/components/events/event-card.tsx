@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Calendar, MapPin, Users } from 'lucide-react';
 import { Button } from '../ui/button';
 import { useAuthStore } from '../../store/auth-store';
@@ -7,20 +8,48 @@ import type { EventData } from '../../types';
 interface EventCardProps {
   event: EventData;
   onJoin: () => Promise<void>;
+  onLeave: () => Promise<void>;
 }
 
-export function EventCard({ event, onJoin }: EventCardProps) {
+export function EventCard({ event, onJoin, onLeave }: EventCardProps) {
   const { user } = useAuthStore();
-  const [isJoining, setIsJoining] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [error, setError] = React.useState('');
 
-  const handleJoin = async (e: React.MouseEvent) => {
-    e.preventDefault(); // Prevent Link navigation
-    if (!user) return;
-    setIsJoining(true);
+  // Check if user is attending
+  const isAttending = React.useMemo(() => {
+    if (!user || !event.attendees) return false;
+    console.log('Checking attendance:', {
+      userId: user.id,
+      attendees: event.attendees,
+      isAttending: event.attendees.some(attendee => attendee.id === user.id)
+    });
+    return event.attendees.some(attendee => attendee.id === user.id);
+  }, [event.attendees, user]);
+
+  const handleAction = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!user) {
+      setError('You must be logged in to join events');
+      return;
+    }
+    
+    setIsLoading(true);
+    setError('');
+    
     try {
-      await onJoin();
+      if (isAttending) {
+        console.log('Leaving event...');
+        await onLeave();
+      } else {
+        console.log('Joining event...');
+        await onJoin();
+      }
+    } catch (err: any) {
+      console.error('Action error:', err);
+      setError(err.response?.data?.message || 'Failed to process request');
     } finally {
-      setIsJoining(false);
+      setIsLoading(false);
     }
   };
 
@@ -65,20 +94,45 @@ export function EventCard({ event, onJoin }: EventCardProps) {
           <div className="flex items-center space-x-2 text-sm text-gray-500">
             <Users className="h-4 w-4" />
             <span>{event.available_places} spots available</span>
+            {event.attendees && (
+              <span className="text-gray-400">
+                ({event.attendees.length} attending)
+              </span>
+            )}
           </div>
 
           <div className="text-sm text-gray-500">
             Price: ${event.price}
           </div>
 
-          {!isOrganizer && (
+          {error && (
+            <div className="text-sm text-red-600">
+              {error}
+            </div>
+          )}
+
+          {!isOrganizer && user && (
             <Button
-              onClick={handleJoin}
-              disabled={isJoining}
+              onClick={handleAction}
+              disabled={isLoading}
+              variant={isAttending ? "outline" : "primary"}
               className="w-full"
             >
-              {isJoining ? 'Joining...' : 'Join Event'}
+              {isLoading 
+                ? 'Processing...' 
+                : isAttending 
+                  ? 'Leave Event' 
+                  : 'Join Event'
+              }
             </Button>
+          )}
+
+          {!user && (
+            <Link to="/login">
+              <Button className="w-full">
+                Login to Join
+              </Button>
+            </Link>
           )}
         </div>
       </div>

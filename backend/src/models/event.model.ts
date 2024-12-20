@@ -1,7 +1,7 @@
 import { RowDataPacket } from 'mysql2';
 
 export interface IEvent extends RowDataPacket {
-  id: string;
+  id: number;
   title: string;
   description: string;
   date: Date;
@@ -9,8 +9,9 @@ export interface IEvent extends RowDataPacket {
   image_url: string | null;
   available_places: number;
   price: number;
-  organizer_id: string;
+  organizer_id: number;
   created_at: Date;
+  updated_at: Date;
 }
 
 // SQL for creating events table:

@@ -1,34 +1,34 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, OneToMany } from 'typeorm';
-import { Event } from '../entities/event.entity';
-import { EventAttendee } from '../entities/event-attendee.entity';
+import type { Event } from './event.entity.js';
+import type { EventAttendee } from './event-attendee.entity.js';
 
 @Entity('users')
 export class User {
-  @PrimaryGeneratedColumn('uuid')
-  id!: string;
+    @PrimaryGeneratedColumn('increment')
+    id!: number;
 
-  @Column()
-  email!: string;
+    @Column()
+    email!: string;
 
-  @Column()
-  password!: string;
+    @Column()
+    password!: string;
 
-  @Column()
-  name!: string;
+    @Column()
+    name!: string;
 
-  @Column({
-    type: 'enum',
-    enum: ['free', 'paid'],
-    default: 'free'
-  })
-  membership_level!: 'free' | 'paid';
+    @Column({
+        type: 'enum',
+        enum: ['free', 'paid'],
+        default: 'free'
+    })
+    membership_level!: 'free' | 'paid';
 
-  @CreateDateColumn()
-  created_at!: Date;
+    @CreateDateColumn()
+    created_at!: Date;
 
-  @OneToMany(() => Event, event => event.creator)
-  created_events!: Event[];
+    @OneToMany('Event', 'creator')
+    created_events!: Event[];
 
-  @OneToMany(() => EventAttendee, attendee => attendee.user)
-  event_attendees!: EventAttendee[];
+    @OneToMany('EventAttendee', 'user')
+    event_attendees!: EventAttendee[];
 } 

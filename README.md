@@ -96,7 +96,7 @@ Content-Type: application/json
 "description": "Updated Event Description",
 "date": "2024-01-01T10:00:00Z",
 "location": "Updated Event Location",
-"maxAttendees": 150
+"available_places": 150
 }
 
 ### Delete Event
@@ -120,7 +120,7 @@ json
 "description": "Annual technology conference",
 "date": "2024-06-15T09:00:00Z",
 "location": "Convention Center",
-"maxAttendees": 100,
+"available_places": 100,
 "creatorId": 1,
 "creator": {
 "id": 1,

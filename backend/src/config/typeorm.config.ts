@@ -1,8 +1,8 @@
 import { DataSource } from 'typeorm';
-import { User } from '../entities/user.entity';
-import { Event } from '../entities/event.entity';
-import { EventAttendee } from '../entities/event-attendee.entity';
-import { config } from './env';
+import { User } from '../entities/user.entity.js';
+import { Event } from '../entities/event.entity.js';
+import { EventAttendee } from '../entities/event-attendee.entity.js';
+import { config } from './env.js';
 
 export const AppDataSource = new DataSource({
   type: 'mysql',
@@ -12,7 +12,9 @@ export const AppDataSource = new DataSource({
   password: config.DB_PASSWORD,
   database: config.DB_NAME,
   entities: [User, Event, EventAttendee],
-  migrations: ['src/migrations/*.ts'],
+  migrations: ['dist/migrations/*.js'],
   synchronize: false,
-  logging: true
+  logging: true,
+  migrationsRun: false,
+  cache: false
 }); 

@@ -1,10 +1,10 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn } from 'typeorm';
-import { User } from './user.entity';
-import { Event } from './event.entity';
+import type { User } from './user.entity.js';
+import type { Event } from './event.entity.js';
 
 @Entity('event_attendees')
 export class EventAttendee {
-    @PrimaryGeneratedColumn()
+    @PrimaryGeneratedColumn('increment')
     id!: number;
 
     @Column()
@@ -13,10 +13,10 @@ export class EventAttendee {
     @Column()
     eventId!: number;
 
-    @ManyToOne(() => User, user => user.created_events)
+    @ManyToOne('User', 'event_attendees')
     user!: User;
 
-    @ManyToOne(() => Event, event => event.attendees)
+    @ManyToOne('Event', 'attendees')
     event!: Event;
 
     @CreateDateColumn()

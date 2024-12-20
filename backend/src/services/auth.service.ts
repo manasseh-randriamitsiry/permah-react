@@ -1,47 +1,74 @@
-import { pool } from '../config/database';
-import { IUser } from '../models/user.model';
-import { hashPassword, comparePassword } from '../utils/password.utils';
-import { generateToken } from '../utils/jwt.utils';
-import { RegisterData, LoginCredentials } from '../types';
-import { ResultSetHeader } from 'mysql2';
+import { AppDataSource } from '../config/typeorm.config.js';
+import { User } from '../entities/user.entity.js';
+import { hashPassword, comparePassword } from '../utils/password.utils.js';
+import { generateToken } from '../utils/jwt.utils.js';
+import { RegisterData, LoginCredentials } from '../types/index.js';
 
 export class AuthService {
+  private userRepository = AppDataSource.getRepository(User);
+
   async register(userData: RegisterData) {
-    const [existing] = await pool.execute<IUser[]>(
-      'SELECT * FROM users WHERE email = ?',
-      [userData.email]
-    );
-    
-    if (existing.length) throw new Error('User already exists');
+    try {
+      // Check if user exists
+      const existing = await this.userRepository.findOne({
+        where: { email: userData.email }
+      });
+      
+      if (existing) throw new Error('User already exists');
 
-    const hashedPassword = await hashPassword(userData.password);
-    await pool.execute(
-      'INSERT INTO users (id, name, email, password) VALUES (UUID(), ?, ?, ?)',
-      [userData.name, userData.email, hashedPassword]
-    );
+      // Create new user
+      const hashedPassword = await hashPassword(userData.password);
+      
+      console.log('Creating user with data:', {
+        name: userData.name,
+        email: userData.email,
+        membership_level: 'free'
+      });
 
-    const [user] = await pool.execute<IUser[]>(
-      'SELECT id, name, email FROM users WHERE email = ?',
-      [userData.email]
-    );
+      const user = this.userRepository.create({
+        name: userData.name,
+        email: userData.email,
+        password: hashedPassword,
+        membership_level: 'free'
+      });
 
-    const token = generateToken(user[0].id);
-    return { user: user[0], token };
+      console.log('Created user instance:', user);
+      console.log('User instance type:', typeof user);
+      console.log('User ID before save:', user.id);
+
+      // Let TypeORM handle the ID generation
+      const savedUser = await this.userRepository.save(user);
+      
+      console.log('Saved user:', savedUser);
+      console.log('Saved user ID:', savedUser.id);
+      console.log('Saved user ID type:', typeof savedUser.id);
+
+      // Generate token with the numeric ID
+      const token = generateToken(savedUser.id);
+      console.log('Generated token for ID:', savedUser.id);
+
+      // Remove password from response
+      const { password, ...userWithoutPassword } = savedUser;
+      return { user: userWithoutPassword, token };
+    } catch (error) {
+      console.error('Registration error:', error);
+      console.error('Error stack:', error);
+      throw error;
+    }
   }
 
   async login(credentials: LoginCredentials) {
-    const [users] = await pool.execute<IUser[]>(
-      'SELECT * FROM users WHERE email = ?',
-      [credentials.email]
-    );
+    const user = await this.userRepository.findOne({
+      where: { email: credentials.email }
+    });
     
-    const user = users[0];
     if (!user) throw new Error('Invalid credentials');
 
     const isValidPassword = await comparePassword(credentials.password, user.password);
     if (!isValidPassword) throw new Error('Invalid credentials');
 
     const token = generateToken(user.id);
-    return { user: { ...user, password: undefined }, token };
+    const { password, ...userWithoutPassword } = user;
+    return { user: userWithoutPassword, token };
   }
 } 

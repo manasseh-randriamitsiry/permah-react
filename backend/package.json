@@ -2,14 +2,15 @@
   "name": "event-manager-backend",
   "version": "1.0.0",
   "description": "Event Manager Backend API",
+  "type": "module",
   "main": "dist/app.js",
   "scripts": {
-    "start": "node dist/app.js",
-    "dev": "ts-node-dev --respawn --transpile-only src/app.ts",
+    "start": "node --experimental-specifier-resolution=node dist/app.js",
+    "dev": "ts-node-esm src/app.ts",
     "build": "tsc",
     "test": "jest",
-    "typeorm": "typeorm-ts-node-commonjs",
-    "migration:run": "typeorm-ts-node-commonjs migration:run -d src/config/datasource.ts"
+    "typeorm": "typeorm-ts-node-esm",
+    "migration:generate": "typeorm-ts-node-esm migration:generate ./src/migrations/CreateTables -d ./src/config/datasource.ts"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

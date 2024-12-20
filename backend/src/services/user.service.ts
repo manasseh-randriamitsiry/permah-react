@@ -1,45 +1,30 @@
-import { pool } from '../config/database';
-import { IUser } from '../models/user.model';
+import { AppDataSource } from '../config/typeorm.config.js';
+import { User } from '../entities/user.entity.js';
 
 export class UserService {
-  async getProfile(userId: string) {
-    const [rows] = await pool.execute<IUser[]>(
-      'SELECT id, email, name FROM users WHERE id = ?',
-      [userId]
-    );
-    return rows[0] || null;
+  private userRepository = AppDataSource.getRepository(User);
+
+  async getProfile(userId: number) {
+    return this.userRepository.findOne({
+      where: { id: userId },
+      select: ['id', 'email', 'name', 'membership_level', 'created_at']
+    });
   }
 
-  async updateProfile(userId: string, updateData: Partial<IUser>) {
+  async updateProfile(userId: number, updateData: Partial<User>) {
     const allowedUpdates = ['name', 'email'];
-    const updates = Object.entries(updateData)
-      .filter(([key]) => allowedUpdates.includes(key))
-      .map(([key, value]) => `${key} = ?`);
+    const filteredData = Object.fromEntries(
+      Object.entries(updateData).filter(([key]) => allowedUpdates.includes(key))
+    );
     
-    if (updates.length === 0) return null;
+    if (Object.keys(filteredData).length === 0) return null;
 
-    const query = `
-      UPDATE users 
-      SET ${updates.join(', ')} 
-      WHERE id = ?
-    `;
-
-    const values = [
-      ...Object.entries(updateData)
-        .filter(([key]) => allowedUpdates.includes(key))
-        .map(([_, value]) => value),
-      userId
-    ];
-
-    await pool.execute(query, values);
+    await this.userRepository.update(userId, filteredData);
     return this.getProfile(userId);
   }
 
-  async updateMembership(userId: string, membershipLevel: 'free' | 'paid') {
-    await pool.execute(
-      'UPDATE users SET membership_level = ? WHERE id = ?',
-      [membershipLevel, userId]
-    );
+  async updateMembership(userId: number, membershipLevel: 'free' | 'paid') {
+    await this.userRepository.update(userId, { membership_level: membershipLevel });
     return this.getProfile(userId);
   }
 } 
