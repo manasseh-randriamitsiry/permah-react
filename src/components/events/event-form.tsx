@@ -7,7 +7,7 @@ import { useAuthStore } from '../../store/auth-store';
 
 interface EventFormProps {
   event?: EventData;
-  onSubmit: (eventData: Omit<EventData, 'id' | 'createdAt' | 'attendees'>) => Promise<void>;
+  onSubmit: (eventData: Omit<EventData, 'id' | 'created_at' | 'updated_at' | 'organizer_id'>) => Promise<void>;
 }
 
 export function EventForm({ event, onSubmit }: EventFormProps) {
@@ -27,15 +27,17 @@ export function EventForm({ event, onSubmit }: EventFormProps) {
     setError('');
 
     const formData = new FormData(e.currentTarget);
+    const date = new Date(formData.get('date') as string);
+    const formattedDate = date.toISOString().slice(0, 19).replace('T', ' ');
+
     const eventData = {
       title: formData.get('title') as string,
       description: formData.get('description') as string,
-      date: new Date(formData.get('date') as string),
+      date: formattedDate,
       location: formData.get('location') as string,
-      imageUrl: formData.get('imageUrl') as string,
-      availablePlaces: Number(formData.get('availablePlaces')),
-      price: Number(formData.get('price')),
-      organizerId: user.id
+      image_url: formData.get('image_url') as string,
+      available_places: Number(formData.get('available_places')),
+      price: Number(formData.get('price'))
     };
 
     try {
@@ -90,36 +92,34 @@ export function EventForm({ event, onSubmit }: EventFormProps) {
         />
 
         <Input
+          label="Available Places"
+          name="available_places"
+          type="number"
+          min="1"
+          defaultValue={event?.available_places ?? ''}
+          required
+          placeholder="e.g., 50"
+        />
+
+        <Input
           label="Event Image URL"
-          name="imageUrl"
+          name="image_url"
           type="url"
-          defaultValue={event?.imageUrl}
+          defaultValue={event?.image_url}
           required
           placeholder="https://example.com/image.jpg"
         />
 
-        <div className="grid gap-6 sm:grid-cols-2">
-          <Input
-            label="Available Places"
-            name="availablePlaces"
-            type="number"
-            min="1"
-            defaultValue={event?.availablePlaces}
-            required
-            placeholder="e.g., 50"
-          />
-
-          <Input
-            label="Price"
-            name="price"
-            type="number"
-            min="0"
-            step="0.01"
-            defaultValue={event?.price}
-            required
-            placeholder="e.g., 99.99"
-          />
-        </div>
+        <Input
+          label="Price"
+          name="price"
+          type="number"
+          min="0"
+          step="0.01"
+          defaultValue={event?.price ?? '0'}
+          required
+          placeholder="e.g., 99.99"
+        />
 
         <div className="flex justify-end space-x-4">
           <Button

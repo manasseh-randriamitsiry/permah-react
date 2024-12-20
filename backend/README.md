@@ -1,6 +1,7 @@
-# permah-react + backend express + orm
+#make migration
+npx typeorm migration:generate -n CreateTables
+npm run typeorm migration:generate src/migrations/CreateTables -- -d src/config/datasource.ts
 
-# API
 # Event Management API
 
 A RESTful API for managing events and attendees.
@@ -69,20 +70,16 @@ http
 GET /events/:id
 
 ### Create Event
-POST http://localhost:3000/api/events
-Headers:
+http
+Authorization: Bearer <your_jwt_token>
+POST /events
 Content-Type: application/json
-Authorization: Bearer YOUR_TOKEN_HERE
-
-Body:
 {
-    "title": "Tech Conference 2024",
-    "description": "Annual technology conference",
-    "date": "2024-06-15 09:00:00",    // Changed format here
-    "location": "Convention Center",
-    "available_places": 100,
-    "price": 0,
-    "image_url": "https://example.com/image.jpg"
+"title": "Event Title",
+"description": "Event Description",
+"date": "2024-01-01T10:00:00Z",
+"location": "Event Location",
+"maxAttendees": 100
 }
 
 
@@ -110,7 +107,7 @@ POST /events/:id/join
 
 http
 DELETE /events/:id/leave
-### Response Formats
+## Response Formats
 
 ### Success Response
 json
@@ -145,19 +142,3 @@ json
 - 403: Forbidden
 - 404: Not Found
 - 500: Internal Server Error
-
-## starting server
-```bash
-### start frontend
-cd permah-react
-npm install
-npm start
-
-### then start the backend by 
-cd backend
-npm install
-npm start
-
-## make migration
-npm run typeorm migration:generate src/migrations/CreateTables -- -d src/config/datasource.ts
-

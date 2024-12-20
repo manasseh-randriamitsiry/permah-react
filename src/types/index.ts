@@ -7,15 +7,15 @@ export interface User {
 }
 
 export interface EventData {
-  id: string;
+  id: number;
   title: string;
   description: string;
-  date: Date;
+  date: string;
   location: string;
-  imageUrl: string;
-  availablePlaces: number;
+  available_places: number;
   price: number;
-  organizerId: string;
-  attendees: string[];
-  createdAt: Date;
+  image_url: string;
+  organizer_id: string;
+  created_at: Date;
+  updated_at: Date;
 }

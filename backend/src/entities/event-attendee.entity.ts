@@ -1,20 +1,24 @@
-import { Entity, PrimaryColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn } from 'typeorm';
 import { User } from './user.entity';
 import { Event } from './event.entity';
 
 @Entity('event_attendees')
 export class EventAttendee {
-  @PrimaryColumn()
-  event_id!: string;
+    @PrimaryGeneratedColumn()
+    id!: number;
 
-  @PrimaryColumn()
-  user_id!: string;
+    @Column()
+    userId!: number;
 
-  @ManyToOne(() => Event, event => event.attendees)
-  @JoinColumn({ name: 'event_id' })
-  event!: Event;
+    @Column()
+    eventId!: number;
 
-  @ManyToOne(() => User, user => user.event_attendees)
-  @JoinColumn({ name: 'user_id' })
-  user!: User;
+    @ManyToOne(() => User, user => user.created_events)
+    user!: User;
+
+    @ManyToOne(() => Event, event => event.attendees)
+    event!: Event;
+
+    @CreateDateColumn()
+    joinedAt!: Date;
 } 

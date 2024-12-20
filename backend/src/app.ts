@@ -10,6 +10,7 @@ import eventRoutes from './routes/event.routes';
 
 import 'reflect-metadata';
 import { AppDataSource } from './config/typeorm.config';
+import { authenticateToken } from './middleware/auth.middleware';
 
 const app = express();
 
@@ -20,7 +21,7 @@ app.use(express.json());
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/events', eventRoutes);
+app.use('/api/events', authenticateToken, eventRoutes);
 
 // Error handling
 app.use(errorHandler);

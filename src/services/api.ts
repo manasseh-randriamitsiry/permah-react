@@ -1,4 +1,5 @@
 import axios from 'axios';
+import type { EventData } from '../types';
 
 const API_URL = 'http://localhost:3000/api';
 
@@ -9,21 +10,23 @@ export const api = axios.create({
   },
 });
 
-// Restore token from localStorage on app reload
-const token = localStorage.getItem('token');
-if (token) {
-  api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-}
-
-// Add response interceptor to handle common errors
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Clear token and auth state on unauthorized
-      localStorage.removeItem('token');
-      delete api.defaults.headers.common['Authorization'];
-    }
-    return Promise.reject(error);
+// Add request interceptor to include auth token
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
-); 
+  return config;
+});
+
+export const eventApi = {
+  getAll: () => api.get<EventData[]>('/events'),
+  getById: (id: number) => api.get<EventData>(`/events/${id}`),
+  create: (eventData: Omit<EventData, 'id' | 'created_at' | 'updated_at' | 'organizer_id'>) => 
+    api.post<EventData>('/events', eventData),
+  update: (id: number, eventData: Partial<EventData>) => 
+    api.put<EventData>(`/events/${id}`, eventData),
+  delete: (id: number) => api.delete(`/events/${id}`),
+  join: (id: number) => api.post(`/events/${id}/join`),
+  leave: (id: number) => api.delete(`/events/${id}/leave`),
+}; 

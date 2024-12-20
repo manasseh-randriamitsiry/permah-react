@@ -7,29 +7,40 @@ export class EventService {
   private eventRepository = AppDataSource.getRepository(Event);
   private attendeeRepository = AppDataSource.getRepository(EventAttendee);
 
-  async createEvent(eventData: EventCreate, organizerId: string): Promise<Event> {
+  async createEvent(eventData: EventCreate, creatorId: string): Promise<Event> {
     const event = this.eventRepository.create({
       ...eventData,
-      organizer_id: organizerId
+      organizer_id: creatorId
     });
     return this.eventRepository.save(event);
   }
 
   async getEvents(): Promise<Event[]> {
     return this.eventRepository.find({
-      relations: ['organizer']
+      relations: ['creator']
     });
   }
 
   async getEventById(eventId: string): Promise<Event | null> {
     return this.eventRepository.findOne({
-      where: { id: eventId },
-      relations: ['organizer', 'attendees']
+      where: { id: parseInt(eventId) },
+      relations: ['creator', 'attendees']
     });
   }
 
   async updateEvent(eventId: string, updateData: Partial<Event>): Promise<Event | null> {
-    await this.eventRepository.update(eventId, updateData);
+    await this.eventRepository.update(
+      { id: parseInt(eventId) },
+      {
+        title: updateData.title,
+        description: updateData.description,
+        date: updateData.date ? new Date(updateData.date) : undefined,
+        location: updateData.location,
+        available_places: updateData.available_places,
+        price: updateData.price,
+        image_url: updateData.image_url
+      }
+    );
     return this.getEventById(eventId);
   }
 
@@ -42,7 +53,7 @@ export class EventService {
     if (!event) throw new Error('Event not found');
 
     const attendeeCount = await this.attendeeRepository.count({
-      where: { event_id: eventId }
+      where: { eventId: parseInt(eventId) }
     });
 
     if (attendeeCount >= event.available_places) {
@@ -50,8 +61,8 @@ export class EventService {
     }
 
     const attendee = this.attendeeRepository.create({
-      event_id: eventId,
-      user_id: userId
+      eventId: parseInt(eventId),
+      userId: parseInt(userId)
     });
     await this.attendeeRepository.save(attendee);
 
@@ -62,8 +73,8 @@ export class EventService {
 
   async leaveEvent(eventId: string, userId: string): Promise<void> {
     await this.attendeeRepository.delete({
-      event_id: eventId,
-      user_id: userId
+      eventId: parseInt(eventId),
+      userId: parseInt(userId)
     });
   }
 } 

@@ -20,8 +20,10 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ user: null, isAuthenticated: false });
   },
   initialize: async () => {
+    console.log('Initializing auth store...');
     const token = localStorage.getItem('token');
     if (token) {
+      console.log('Found token:', token);
       try {
         api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         const response = await api.get('/users/user');
@@ -30,6 +32,8 @@ export const useAuthStore = create<AuthState>((set) => ({
         localStorage.removeItem('token');
         delete api.defaults.headers.common['Authorization'];
       }
+    } else {
+      console.log('No token found');
     }
   },
 }));

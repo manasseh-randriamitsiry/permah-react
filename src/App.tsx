@@ -7,13 +7,25 @@ import { EventList } from './components/events/event-list';
 import { EventForm } from './components/events/event-form';
 import { useAuthStore } from './store/auth-store';
 import type { EventData } from './types';
+import { eventApi } from './services/api';
+import { Dashboard } from './components/dashboard/dashboard';
+
+console.log('App.tsx loaded');
 
 function App() {
   const initialize = useAuthStore((state) => state.initialize);
 
   React.useEffect(() => {
-    initialize();
+    console.log('App mounting...');
+    try {
+      initialize();
+      console.log('Initialization complete');
+    } catch (error) {
+      console.error('Initialization error:', error);
+    }
   }, [initialize]);
+
+  console.log('App rendering...');
 
   return (
     <Router>
@@ -26,6 +38,7 @@ function App() {
             <Route path="/signup" element={<SignupForm />} />
             <Route path="/events" element={<EventList />} />
             <Route path="/events/new" element={<CreateEvent />} />
+            <Route path="/dashboard" element={<Dashboard />} />
           </Routes>
         </main>
       </div>
@@ -58,10 +71,12 @@ function Home() {
 }
 
 function CreateEvent() {
-  const handleSubmit = async (eventData: Omit<EventData, 'id' | 'createdAt' | 'attendees'>) => {
-    // Simulated API call - replace with actual API implementation
-    console.log('Creating event:', eventData);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+  const handleSubmit = async (eventData: Omit<EventData, 'id' | 'created_at' | 'updated_at' | 'organizer_id'>) => {
+    try {
+      await eventApi.create(eventData);
+    } catch (error) {
+      throw error;
+    }
   };
 
   return <EventForm onSubmit={handleSubmit} />;

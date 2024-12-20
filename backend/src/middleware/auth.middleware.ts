@@ -1,29 +1,23 @@
-import { Response, NextFunction } from 'express';
-import { verifyToken } from '../utils/jwt.utils';
-import { AuthRequest } from '../types';
+import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
+import { config } from '../config/env';
 
-export const authenticate = async (
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const token = req.headers.authorization?.split(' ')[1];
-    
+export const authenticateToken = (req: Request, res: Response, next: NextFunction): void => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
     if (!token) {
-      res.status(401).json({ message: 'Authentication required' });
-      return;
+        res.status(401).json({ message: 'No token provided' });
+        return;
     }
 
-    const decoded = verifyToken(token);
-    if (!decoded.userId) {
-      res.status(401).json({ message: 'Invalid token' });
-      return;
-    }
-    
-    req.user = { userId: decoded.userId };
-    next();
-  } catch (error) {
-    res.status(401).json({ message: 'Invalid token' });
-  }
-}; 
+    jwt.verify(token, config.JWT_SECRET, (err: any, user: any) => {
+        if (err) {
+            res.status(403).json({ message: 'Invalid token' });
+            return;
+        }
+
+        (req as any).user = user;
+        next();
+    });
+};
