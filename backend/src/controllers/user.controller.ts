@@ -30,17 +30,4 @@ export class UserController {
       res.status(400).json({ message: error.message || 'Failed to update profile' });
     }
   }
-
-  async updateMembership(req: AuthRequest, res: Response): Promise<void> {
-    if (!req.user) {
-      res.status(401).json({ message: 'Authentication required' });
-      return;
-    }
-    try {
-      const user = await userService.updateMembership(req.user.userId, req.body.membership_level);
-      res.status(200).json(user);
-    } catch (error: any) {
-      res.status(400).json({ message: error.message || 'Failed to update membership' });
-    }
-  }
 } 

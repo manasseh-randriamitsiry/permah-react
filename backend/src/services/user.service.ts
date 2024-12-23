@@ -7,7 +7,7 @@ export class UserService {
   async getProfile(userId: number) {
     return this.userRepository.findOne({
       where: { id: userId },
-      select: ['id', 'email', 'name', 'membership_level', 'created_at']
+      select: ['id', 'email', 'name', 'created_at']
     });
   }
 
@@ -20,11 +20,6 @@ export class UserService {
     if (Object.keys(filteredData).length === 0) return null;
 
     await this.userRepository.update(userId, filteredData);
-    return this.getProfile(userId);
-  }
-
-  async updateMembership(userId: number, membershipLevel: 'free' | 'paid') {
-    await this.userRepository.update(userId, { membership_level: membershipLevel });
     return this.getProfile(userId);
   }
 } 

@@ -1,24 +1,24 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn } from 'typeorm';
-import type { User } from './user.entity.js';
 import type { Event } from './event.entity.js';
+import type { User } from './user.entity.js';
 
 @Entity('event_attendees')
 export class EventAttendee {
-    @PrimaryGeneratedColumn('increment')
+    @PrimaryGeneratedColumn()
     id!: number;
 
-    @Column()
+    @Column({ type: 'int' })
     userId!: number;
 
-    @Column()
+    @Column({ type: 'int' })
     eventId!: number;
-
-    @ManyToOne('User', 'event_attendees')
-    user!: User;
-
-    @ManyToOne('Event', 'attendees')
-    event!: Event;
 
     @CreateDateColumn()
     joinedAt!: Date;
+
+    @ManyToOne('Event', (event: Event) => event.attendees)
+    event!: Event;
+
+    @ManyToOne('User', (user: User) => user.attendedEvents)
+    user!: User;
 } 

@@ -14,11 +14,17 @@ export function EventList() {
 
   const fetchEvents = async () => {
     try {
+      setLoading(true);
       const response = await eventApi.getAll();
       setEvents(response.data);
+      setError('');
     } catch (err: any) {
-      console.error('Error fetching events:', err);
-      setError(err.message || 'Failed to fetch events');
+      if (err.response?.status === 401) {
+        setEvents([]); // Clear events on unauthorized
+      } else {
+        console.error('Error fetching events:', err);
+        setError(err.message || 'Failed to fetch events');
+      }
     } finally {
       setLoading(false);
     }
@@ -26,7 +32,7 @@ export function EventList() {
 
   React.useEffect(() => {
     fetchEvents();
-  }, []);
+  }, [user]);
 
   const handleJoinEvent = async (eventId: number) => {
     if (!user) {

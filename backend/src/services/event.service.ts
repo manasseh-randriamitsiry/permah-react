@@ -35,20 +35,35 @@ export class EventService {
   }
 
   async joinEvent(eventId: number, userId: number): Promise<Event> {
+    if (!userId || isNaN(userId)) {
+        throw new Error('Invalid user ID');
+    }
+
     const event = await this.getEventById(eventId);
     if (!event) throw new Error('Event not found');
 
     const attendeeCount = await this.attendeeRepository.count({
-      where: { eventId }
+        where: { eventId }
     });
 
     if (attendeeCount >= event.available_places) {
-      throw new Error('Event is full');
+        throw new Error('Event is full');
+    }
+
+    const existingAttendee = await this.attendeeRepository.findOne({
+        where: {
+            eventId,
+            userId
+        }
+    });
+
+    if (existingAttendee) {
+        throw new Error('Already attending this event');
     }
 
     const attendee = this.attendeeRepository.create({
-      eventId,
-      userId
+        eventId,
+        userId
     });
     await this.attendeeRepository.save(attendee);
 

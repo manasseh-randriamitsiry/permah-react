@@ -2,7 +2,6 @@ export interface User {
   id: number;
   name: string;
   email: string;
-  membershipLevel: 'free' | 'paid';
   createdAt: Date;
 }
 

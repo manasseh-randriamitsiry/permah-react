@@ -8,8 +8,11 @@ const eventController = new EventController();
 const asyncHandler = (fn: RequestHandler): RequestHandler => 
   (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
+// Public routes
 router.get('/', asyncHandler(eventController.getEvents.bind(eventController)));
 router.get('/:id', asyncHandler(eventController.getEvent.bind(eventController)));
+
+// Protected routes
 router.post('/', authenticate, asyncHandler(eventController.createEvent.bind(eventController)));
 router.put('/:id', authenticate, asyncHandler(eventController.updateEvent.bind(eventController)));
 router.delete('/:id', authenticate, asyncHandler(eventController.deleteEvent.bind(eventController)));

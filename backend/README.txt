@@ -1,7 +1,6 @@
-#make migration
-npx typeorm migration:generate -n CreateTables
-npm run typeorm migration:generate src/migrations/CreateTables -- -d src/config/datasource.ts
+# permah-react + backend express + orm
 
+# API
 # Event Management API
 
 A RESTful API for managing events and attendees.
@@ -70,16 +69,20 @@ http
 GET /events/:id
 
 ### Create Event
-http
-Authorization: Bearer <your_jwt_token>
-POST /events
+POST http://localhost:3000/api/events
+Headers:
 Content-Type: application/json
+Authorization: Bearer YOUR_TOKEN_HERE
+
+Body:
 {
-"title": "Event Title",
-"description": "Event Description",
-"date": "2024-01-01T10:00:00Z",
-"location": "Event Location",
-"maxAttendees": 100
+    "title": "Tech Conference 2024",
+    "description": "Annual technology conference",
+    "date": "2024-06-15 09:00:00",    // Changed format here
+    "location": "Convention Center",
+    "available_places": 100,
+    "price": 0,
+    "image_url": "https://example.com/image.jpg"
 }
 
 
@@ -93,7 +96,7 @@ Content-Type: application/json
 "description": "Updated Event Description",
 "date": "2024-01-01T10:00:00Z",
 "location": "Updated Event Location",
-"maxAttendees": 150
+"available_places": 150
 }
 
 ### Delete Event
@@ -107,7 +110,7 @@ POST /events/:id/join
 
 http
 DELETE /events/:id/leave
-## Response Formats
+### Response Formats
 
 ### Success Response
 json
@@ -117,7 +120,7 @@ json
 "description": "Annual technology conference",
 "date": "2024-06-15T09:00:00Z",
 "location": "Convention Center",
-"maxAttendees": 100,
+"available_places": 100,
 "creatorId": 1,
 "creator": {
 "id": 1,
@@ -142,3 +145,27 @@ json
 - 403: Forbidden
 - 404: Not Found
 - 500: Internal Server Error
+
+## starting server
+```bash
+### start frontend
+cd permah-react
+npm install
+npm start
+
+### then start the backend by 
+cd backend
+npm install
+npm start
+
+# First, make sure you're in the backend directory
+cd backend
+
+# Drop existing tables
+npm run typeorm schema:drop -- -d src/config/datasource.ts
+
+# Generate new migration
+npm run typeorm migration:generate src/migrations/CreateTables -- -d src/config/datasource.ts
+
+# Run the migration
+npm run typeorm migration:run -- -d src/config/datasource.ts

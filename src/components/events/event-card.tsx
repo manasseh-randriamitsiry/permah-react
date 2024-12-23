@@ -42,12 +42,21 @@ export function EventCard({ event, onJoin, onLeave }: EventCardProps) {
         console.log('Leaving event...');
         await onLeave();
       } else {
-        console.log('Joining event...');
+        console.log('Joining event...', {
+          userId: user.id,
+          eventId: event.id,
+          token: localStorage.getItem('token')
+        });
         await onJoin();
       }
     } catch (err: any) {
       console.error('Action error:', err);
-      setError(err.response?.data?.message || 'Failed to process request');
+      const errorMessage = err.response?.data?.message || 'Failed to process request';
+      setError(errorMessage);
+      if (err.response?.status === 401) {
+        // Redirect to login if unauthorized
+        window.location.href = '/login';
+      }
     } finally {
       setIsLoading(false);
     }

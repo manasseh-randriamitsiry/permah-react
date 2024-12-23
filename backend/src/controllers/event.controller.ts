@@ -165,11 +165,18 @@ export class EventController {
     async joinEvent(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const eventId = parseInt(req.params.id);
-            const userId = parseInt((req as any).user.id);
+            const userId = (req as any).user?.userId;
 
+            console.log('Join Event Request:', { eventId, userId, user: (req as any).user });
+
+            if (!userId || isNaN(userId)) {
+                res.status(401).json({ message: 'Invalid user ID' });
+                return;
+            }
+
+            // First check if the event exists
             const event = await this.eventRepository.findOne({
-                where: { id: eventId },
-                relations: ['attendees']
+                where: { id: eventId }
             });
 
             if (!event) {
@@ -177,26 +184,25 @@ export class EventController {
                 return;
             }
 
-            // Check if user is already attending
-            const isAttending = await this.attendeeRepository.findOne({
-                where: {
-                    eventId,
-                    userId
-                }
-            });
+            // Check if already attending
+            const existingAttendee = await this.attendeeRepository
+                .createQueryBuilder('attendee')
+                .where('attendee.eventId = :eventId', { eventId })
+                .andWhere('attendee.userId = :userId', { userId })
+                .getOne();
 
-            if (isAttending) {
+            if (existingAttendee) {
                 res.status(400).json({ message: 'Already attending this event' });
                 return;
             }
 
             // Create new attendee record
-            const attendee = this.attendeeRepository.create({
-                eventId,
-                userId
+            const newAttendee = this.attendeeRepository.create({
+                eventId: eventId,
+                userId: userId
             });
 
-            await this.attendeeRepository.save(attendee);
+            await this.attendeeRepository.save(newAttendee);
 
             // Get updated event with attendees
             const updatedEvent = await this.eventRepository
@@ -209,6 +215,7 @@ export class EventController {
 
             res.json(updatedEvent);
         } catch (error) {
+            console.error('Join event error:', error);
             next(error);
         }
     }

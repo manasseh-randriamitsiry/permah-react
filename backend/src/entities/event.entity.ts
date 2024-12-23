@@ -4,7 +4,7 @@ import type { EventAttendee } from './event-attendee.entity.js';
 
 @Entity('events')
 export class Event {
-    @PrimaryGeneratedColumn('increment')
+    @PrimaryGeneratedColumn()
     id!: number;
 
     @Column()
@@ -22,19 +22,19 @@ export class Event {
     @Column()
     available_places!: number;
 
-    @Column()
+    @Column('decimal', { precision: 10, scale: 2 })
     price!: number;
 
     @Column({ nullable: true })
-    image_url!: string;
+    image_url?: string;
 
     @Column()
     organizer_id!: number;
 
-    @ManyToOne('User', 'created_events')
+    @ManyToOne('User', (user: User) => user.createdEvents)
     creator!: User;
 
-    @OneToMany('EventAttendee', 'event')
+    @OneToMany('EventAttendee', (attendee: EventAttendee) => attendee.event)
     attendees!: EventAttendee[];
 
     @CreateDateColumn()

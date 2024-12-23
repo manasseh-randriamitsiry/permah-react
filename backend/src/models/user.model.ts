@@ -5,6 +5,5 @@ export interface IUser extends RowDataPacket {
   email: string;
   password: string;
   name: string;
-  membership_level: 'free' | 'paid';
   created_at: Date;
 } 

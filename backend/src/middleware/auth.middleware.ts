@@ -2,32 +2,37 @@ import { Request, Response, NextFunction } from 'express';
 import { verifyToken } from '../utils/jwt.utils.js';
 import { AuthRequest } from '../types/index.js';
 
+interface DecodedToken {
+  userId: number;
+}
+
 export const authenticate = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    const authHeader = req.headers.authorization;
+    const token = req.headers.authorization?.split(' ')[1];
     
-    if (!authHeader) {
+    if (!token) {
       res.status(401).json({ message: 'No token provided' });
       return;
     }
 
-    const token = authHeader.split(' ')[1];
-    if (!token) {
-      res.status(401).json({ message: 'Invalid token format' });
+    const decoded = verifyToken(token) as DecodedToken;
+    
+    if (!decoded) {
+      res.status(401).json({ message: 'Invalid token' });
       return;
     }
 
-    const decoded = verifyToken(token);
     req.user = {
       userId: decoded.userId
     };
 
     next();
   } catch (error) {
+    console.error('Auth middleware error:', error);
     res.status(401).json({ message: 'Invalid token' });
   }
 };

@@ -20,7 +20,7 @@ app.use(express.json());
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/events', authenticate, eventRoutes);
+app.use('/api/events', eventRoutes);
 
 // Error handling
 app.use(errorHandler);
