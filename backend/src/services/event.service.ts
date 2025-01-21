@@ -1,71 +1,91 @@
-import { AppDataSource } from '../config/typeorm.config.js';
 import { Event } from '../entities/event.entity.js';
 import { EventAttendee } from '../entities/event-attendee.entity.js';
+import { getTestDataSource } from '../config/test.config.js';
+import { AppDataSource } from '../config/typeorm.config.js';
 import { EventCreate } from '../types/index.js';
 
 export class EventService {
-  private eventRepository = AppDataSource.getRepository(Event);
-  private attendeeRepository = AppDataSource.getRepository(EventAttendee);
+  private async getDataSource() {
+    return process.env.NODE_ENV === 'test' 
+      ? await getTestDataSource()
+      : AppDataSource;
+  }
+
+  private async getEventRepository() {
+    const dataSource = await this.getDataSource();
+    return dataSource.getRepository(Event);
+  }
+
+  private async getAttendeeRepository() {
+    const dataSource = await this.getDataSource();
+    return dataSource.getRepository(EventAttendee);
+  }
 
   async createEvent(eventData: Partial<Event>): Promise<Event> {
-    const event = this.eventRepository.create(eventData);
-    return this.eventRepository.save(event);
+    const repository = await this.getEventRepository();
+    const event = repository.create(eventData);
+    return repository.save(event);
   }
 
   async getEvents(): Promise<Event[]> {
-    return this.eventRepository.find({
+    const repository = await this.getEventRepository();
+    return repository.find({
       relations: ['creator', 'attendees', 'attendees.user']
     });
   }
 
   async getEventById(eventId: number): Promise<Event | null> {
-    return this.eventRepository.findOne({
+    const repository = await this.getEventRepository();
+    return repository.findOne({
       where: { id: eventId },
       relations: ['creator', 'attendees', 'attendees.user']
     });
   }
 
   async updateEvent(eventId: number, updateData: Partial<Event>): Promise<Event | null> {
-    await this.eventRepository.update(eventId, updateData);
+    const repository = await this.getEventRepository();
+    await repository.update(eventId, updateData);
     return this.getEventById(eventId);
   }
 
   async deleteEvent(eventId: number): Promise<void> {
-    await this.eventRepository.delete(eventId);
+    const repository = await this.getEventRepository();
+    await repository.delete(eventId);
   }
 
   async joinEvent(eventId: number, userId: number): Promise<Event> {
     if (!userId || isNaN(userId)) {
-        throw new Error('Invalid user ID');
+      throw new Error('Invalid user ID');
     }
 
     const event = await this.getEventById(eventId);
     if (!event) throw new Error('Event not found');
 
-    const attendeeCount = await this.attendeeRepository.count({
-        where: { eventId }
+    const attendeeRepository = await this.getAttendeeRepository();
+    const attendeeCount = await attendeeRepository.count({
+      where: { event: { id: eventId } }
     });
 
     if (attendeeCount >= event.available_places) {
-        throw new Error('Event is full');
+      throw new Error('Event is full');
     }
 
-    const existingAttendee = await this.attendeeRepository.findOne({
-        where: {
-            eventId,
-            userId
-        }
+    const existingAttendee = await attendeeRepository.findOne({
+      where: {
+        event: { id: eventId },
+        user: { id: userId }
+      }
     });
 
     if (existingAttendee) {
-        throw new Error('Already attending this event');
+      throw new Error('Already attending this event');
     }
 
-    const attendee = this.attendeeRepository.create({
-        eventId,
-        userId
+    const attendee = attendeeRepository.create({
+      event: { id: eventId },
+      user: { id: userId }
     });
-    await this.attendeeRepository.save(attendee);
+    await attendeeRepository.save(attendee);
 
     const updatedEvent = await this.getEventById(eventId);
     if (!updatedEvent) throw new Error('Event not found');
@@ -73,9 +93,10 @@ export class EventService {
   }
 
   async leaveEvent(eventId: number, userId: number): Promise<void> {
-    await this.attendeeRepository.delete({
-      eventId,
-      userId
+    const attendeeRepository = await this.getAttendeeRepository();
+    await attendeeRepository.delete({
+      event: { id: eventId },
+      user: { id: userId }
     });
   }
 } 

@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
-import type { User } from './user.entity.js';
-import type { EventAttendee } from './event-attendee.entity.js';
+import { User } from './user.entity.js';
+import { EventAttendee } from './event-attendee.entity.js';
 
 @Entity('events')
 export class Event {
@@ -31,10 +31,10 @@ export class Event {
     @Column()
     organizer_id!: number;
 
-    @ManyToOne('User', (user: User) => user.createdEvents)
+    @ManyToOne(() => User, user => user.createdEvents)
     creator!: User;
 
-    @OneToMany('EventAttendee', (attendee: EventAttendee) => attendee.event)
+    @OneToMany(() => EventAttendee, attendee => attendee.event)
     attendees!: EventAttendee[];
 
     @CreateDateColumn()
