@@ -1,33 +1,46 @@
-import { Response } from 'express';
-import type { AuthRequest } from '../types/index.js';
+import { Request, Response } from 'express';
 import { UserService } from '../services/user.service.js';
-
-const userService = new UserService();
+import { AppError } from '../utils/errors.js';
+import { AuthRequest } from '../types/index.js';
 
 export class UserController {
-  async getProfile(req: AuthRequest, res: Response): Promise<void> {
-    if (!req.user) {
-      res.status(401).json({ message: 'Authentication required' });
-      return;
-    }
-    try {
-      const user = await userService.getProfile(req.user.userId);
-      res.status(200).json(user);
-    } catch (error: any) {
-      res.status(400).json({ message: error.message || 'Failed to get profile' });
-    }
-  }
+    private userService: UserService;
 
-  async updateProfile(req: AuthRequest, res: Response): Promise<void> {
-    if (!req.user) {
-      res.status(401).json({ message: 'Authentication required' });
-      return;
+    constructor() {
+        this.userService = new UserService();
     }
-    try {
-      const user = await userService.updateProfile(req.user.userId, req.body);
-      res.status(200).json(user);
-    } catch (error: any) {
-      res.status(400).json({ message: error.message || 'Failed to update profile' });
+
+    async getProfile(req: AuthRequest, res: Response) {
+        try {
+            if (!req.user) {
+                throw new AppError('User not authenticated', 401);
+            }
+
+            const user = await this.userService.getProfile(req.user.id);
+            res.json(user);
+        } catch (error) {
+            if (error instanceof AppError) {
+                res.status(error.statusCode).json({ error: error.message });
+            } else {
+                res.status(500).json({ error: 'Internal server error' });
+            }
+        }
     }
-  }
+
+    async updateProfile(req: AuthRequest, res: Response) {
+        try {
+            if (!req.user) {
+                throw new AppError('User not authenticated', 401);
+            }
+
+            const user = await this.userService.updateProfile(req.user.id, req.body);
+            res.json(user);
+        } catch (error) {
+            if (error instanceof AppError) {
+                res.status(error.statusCode).json({ error: error.message });
+            } else {
+                res.status(500).json({ error: 'Internal server error' });
+            }
+        }
+    }
 } 

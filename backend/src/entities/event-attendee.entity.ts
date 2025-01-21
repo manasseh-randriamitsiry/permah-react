@@ -1,24 +1,24 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn } from 'typeorm';
-import type { Event } from './event.entity.js';
-import type { User } from './user.entity.js';
+import { Entity, PrimaryGeneratedColumn, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
+import { User } from './user.entity.js';
+import { Event } from './event.entity.js';
 
 @Entity('event_attendees')
 export class EventAttendee {
     @PrimaryGeneratedColumn()
     id!: number;
 
-    @Column({ type: 'int' })
-    userId!: number;
-
-    @Column({ type: 'int' })
-    eventId!: number;
-
-    @CreateDateColumn()
-    joinedAt!: Date;
-
-    @ManyToOne('Event', (event: Event) => event.attendees)
+    @ManyToOne('Event', (event: Event) => event.attendees, {
+        onDelete: 'CASCADE'
+    })
+    @JoinColumn({ name: 'event_id' })
     event!: Event;
 
-    @ManyToOne('User', (user: User) => user.attendedEvents)
+    @ManyToOne('User', (user: User) => user.attendedEvents, {
+        onDelete: 'CASCADE'
+    })
+    @JoinColumn({ name: 'user_id' })
     user!: User;
+
+    @CreateDateColumn()
+    created_at!: Date;
 } 

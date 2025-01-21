@@ -1,107 +1,59 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import { Event } from '../entities/event.entity.js';
 import { EventAttendee } from '../entities/event-attendee.entity.js';
 import { AppDataSource } from '../config/typeorm.config.js';
+import { AppError } from '../utils/errors.js';
+import { EventService } from '../services/event.service.js';
+import { AuthRequest } from '../types/index.js';
 
 export class EventController {
     private eventRepository = AppDataSource.getRepository(Event);
     private attendeeRepository = AppDataSource.getRepository(EventAttendee);
+    private eventService = new EventService();
 
-    async getEvents(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async getEvents(req: Request, res: Response) {
         try {
-            const events = await this.eventRepository
-                .createQueryBuilder('event')
-                .leftJoinAndSelect('event.creator', 'creator')
-                .leftJoinAndSelect('event.attendees', 'attendees')
-                .leftJoinAndSelect('attendees.user', 'attendeeUser')
-                .select([
-                    'event',
-                    'creator.id',
-                    'creator.name',
-                    'attendees',
-                    'attendeeUser.id',
-                    'attendeeUser.name'
-                ])
-                .getMany();
-
-            // Transform the response to match the frontend expectations
-            const transformedEvents = events.map(event => ({
-                ...event,
-                attendees: event.attendees.map(attendee => ({
-                    id: attendee.user.id,
-                    name: attendee.user.name
-                }))
-            }));
-
-            console.log('Events with attendees:', JSON.stringify(transformedEvents, null, 2));
-            res.json(transformedEvents);
+            const events = await this.eventService.getEvents();
+            res.json(events);
         } catch (error) {
-            console.error('Error fetching events:', error);
-            next(error);
+            res.status(500).json({ error: 'Internal server error' });
         }
     }
 
-    async getEvent(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async getEvent(req: Request, res: Response) {
         try {
             const { id } = req.params;
-            const event = await this.eventRepository
-                .createQueryBuilder('event')
-                .leftJoinAndSelect('event.creator', 'creator')
-                .leftJoinAndSelect('event.attendees', 'attendees')
-                .leftJoinAndSelect('attendees.user', 'attendeeUser')
-                .where('event.id = :id', { id })
-                .select([
-                    'event',
-                    'creator.id',
-                    'creator.name',
-                    'attendees',
-                    'attendeeUser.id',
-                    'attendeeUser.name'
-                ])
-                .getOne();
-
+            const event = await this.eventService.getEventById(Number(id));
+            
             if (!event) {
-                res.status(404).json({ message: 'Event not found' });
-                return;
+                throw new AppError('Event not found', 404);
             }
 
-            // Transform the response
-            const transformedEvent = {
-                ...event,
-                attendees: event.attendees.map(attendee => ({
-                    id: attendee.user.id,
-                    name: attendee.user.name
-                }))
-            };
-
-            res.json(transformedEvent);
+            res.json(event);
         } catch (error) {
-            next(error);
+            if (error instanceof AppError) {
+                res.status(error.statusCode).json({ error: error.message });
+            } else {
+                res.status(500).json({ error: 'Internal server error' });
+            }
         }
     }
 
-    async createEvent(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async createEvent(req: AuthRequest, res: Response) {
         try {
-            const { title, description, date, location, available_places, price, image_url } = req.body;
-            
-            // Validate required fields
-            if (!title || !description || !date || !location || !available_places || price === undefined) {
-                res.status(400).json({ 
-                    message: "Missing required fields", 
-                    required: {
-                        title: !title,
-                        description: !description,
-                        date: !date,
-                        location: !location,
-                        available_places: !available_places,
-                        price: price === undefined
-                    }
-                });
-                return;
+            const { 
+                title, 
+                description, 
+                date, 
+                location, 
+                available_places, 
+                price 
+            } = req.body;
+
+            if (!req.user) {
+                throw new AppError('User not authenticated', 401);
             }
-    
-            const userId = (req as any).user.userId;
-    
+
             const event = this.eventRepository.create({
                 title,
                 description,
@@ -109,19 +61,21 @@ export class EventController {
                 location,
                 available_places: Number(available_places),
                 price: Number(price),
-                image_url,
-                organizer_id: userId,
-                created_at: new Date()
+                organizer_id: req.user.id
             });
-    
-            await this.eventRepository.save(event);
-            res.status(201).json(event);
+
+            const savedEvent = await this.eventRepository.save(event);
+            res.status(201).json(savedEvent);
         } catch (error) {
-            next(error);
+            if (error instanceof AppError) {
+                res.status(error.statusCode).json({ error: error.message });
+            } else {
+                res.status(500).json({ error: 'Internal server error' });
+            }
         }
     }
 
-    async updateEvent(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async updateEvent(req: AuthRequest, res: Response) {
         try {
             const eventId = req.params.id;
             const updateData = {
@@ -129,22 +83,23 @@ export class EventController {
                 description: req.body.description,
                 date: req.body.date,
                 location: req.body.location,
-                maxAttendees: req.body.maxAttendees
+                available_places: req.body.available_places
             };
+
+            if (!req.user) {
+                throw new AppError('User not authenticated', 401);
+            }
 
             const event = await this.eventRepository.findOne({
                 where: { id: parseInt(eventId) }
             });
 
             if (!event) {
-                res.status(404).json({ message: 'Event not found' });
-                return;
+                throw new AppError('Event not found', 404);
             }
 
-            // Check if user is the creator
-            if (event.organizer_id !== (req as any).user.id) {
-                res.status(403).json({ message: 'Not authorized to update this event' });
-                return;
+            if (event.organizer_id !== req.user.id) {
+                throw new AppError('Not authorized to update this event', 403);
             }
 
             const updatedEvent = await this.eventRepository.save({
@@ -154,7 +109,11 @@ export class EventController {
 
             res.json(updatedEvent);
         } catch (error) {
-            next(error);
+            if (error instanceof AppError) {
+                res.status(error.statusCode).json({ error: error.message });
+            } else {
+                res.status(500).json({ error: 'Internal server error' });
+            }
         }
     }
 
@@ -162,91 +121,41 @@ export class EventController {
         // Implementation
     }
 
-    async joinEvent(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async joinEvent(req: AuthRequest, res: Response) {
         try {
-            const eventId = parseInt(req.params.id);
-            const userId = (req as any).user?.userId;
-
-            console.log('Join Event Request:', { eventId, userId, user: (req as any).user });
-
-            if (!userId || isNaN(userId)) {
-                res.status(401).json({ message: 'Invalid user ID' });
-                return;
+            const { id: eventId } = req.params;
+            
+            if (!req.user) {
+                throw new AppError('User not authenticated', 401);
             }
 
-            // First check if the event exists
-            const event = await this.eventRepository.findOne({
-                where: { id: eventId }
-            });
-
-            if (!event) {
-                res.status(404).json({ message: 'Event not found' });
-                return;
-            }
-
-            // Check if already attending
-            const existingAttendee = await this.attendeeRepository
-                .createQueryBuilder('attendee')
-                .where('attendee.eventId = :eventId', { eventId })
-                .andWhere('attendee.userId = :userId', { userId })
-                .getOne();
-
-            if (existingAttendee) {
-                res.status(400).json({ message: 'Already attending this event' });
-                return;
-            }
-
-            // Create new attendee record
-            const newAttendee = this.attendeeRepository.create({
-                eventId: eventId,
-                userId: userId
-            });
-
-            await this.attendeeRepository.save(newAttendee);
-
-            // Get updated event with attendees
-            const updatedEvent = await this.eventRepository
-                .createQueryBuilder('event')
-                .leftJoinAndSelect('event.creator', 'creator')
-                .leftJoinAndSelect('event.attendees', 'attendees')
-                .leftJoinAndSelect('attendees.user', 'attendeeUser')
-                .where('event.id = :id', { id: eventId })
-                .getOne();
-
-            res.json(updatedEvent);
+            const event = await this.eventService.joinEvent(Number(eventId), req.user.id);
+            res.json(event);
         } catch (error) {
-            console.error('Join event error:', error);
-            next(error);
+            if (error instanceof AppError) {
+                res.status(error.statusCode).json({ error: error.message });
+            } else {
+                res.status(500).json({ error: 'Internal server error' });
+            }
         }
     }
 
-    async leaveEvent(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async leaveEvent(req: AuthRequest, res: Response) {
         try {
-            const eventId = req.params.id;
-            const userId = (req as any).user.id;
-
-            const result = await this.attendeeRepository.delete({
-                eventId: parseInt(eventId),
-                userId: parseInt(userId)
-            });
-
-            if (result.affected === 0) {
-                res.status(404).json({ message: 'Not attending this event' });
-                return;
+            const { id: eventId } = req.params;
+            
+            if (!req.user) {
+                throw new AppError('User not authenticated', 401);
             }
 
-            // Get updated event with attendees
-            const updatedEvent = await this.eventRepository
-                .createQueryBuilder('event')
-                .leftJoinAndSelect('event.creator', 'creator')
-                .leftJoinAndSelect('event.attendees', 'attendees')
-                .leftJoinAndSelect('attendees.user', 'attendeeUser')
-                .where('event.id = :id', { id: eventId })
-                .getOne();
-
-            res.json(updatedEvent);
+            await this.eventService.leaveEvent(Number(eventId), req.user.id);
+            res.status(200).json({ message: 'Successfully left the event' });
         } catch (error) {
-            next(error);
+            if (error instanceof AppError) {
+                res.status(error.statusCode).json({ error: error.message });
+            } else {
+                res.status(500).json({ error: 'Internal server error' });
+            }
         }
     }
 } 

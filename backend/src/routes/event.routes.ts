@@ -1,12 +1,10 @@
-import { Router, RequestHandler } from 'express';
+import { Router } from 'express';
 import { EventController } from '../controllers/event.controller.js';
 import { authenticate } from '../middleware/auth.middleware.js';
+import { asyncHandler } from '../utils/async-handler.js';
 
 const router = Router();
 const eventController = new EventController();
-
-const asyncHandler = (fn: RequestHandler): RequestHandler => 
-  (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
 // Public routes
 router.get('/', asyncHandler(eventController.getEvents.bind(eventController)));

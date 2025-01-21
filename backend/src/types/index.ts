@@ -2,7 +2,9 @@ import { Request } from 'express';
 
 export interface AuthRequest extends Request {
   user?: {
-    userId: number;
+    id: number;
+    email: string;
+    name: string;
   };
 }
 
@@ -29,7 +31,7 @@ export interface EventCreate {
   description: string;
   date: Date;
   location: string;
-  image_url?: string;
   available_places: number;
   price: number;
+  organizer_id: number;
 } 

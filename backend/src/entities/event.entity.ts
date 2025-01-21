@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, CreateDateColumn, JoinColumn } from 'typeorm';
 import { User } from './user.entity.js';
 import { EventAttendee } from './event-attendee.entity.js';
 
@@ -10,10 +10,10 @@ export class Event {
     @Column()
     title!: string;
 
-    @Column('text')
+    @Column()
     description!: string;
 
-    @Column('datetime')
+    @Column()
     date!: Date;
 
     @Column()
@@ -22,24 +22,21 @@ export class Event {
     @Column()
     available_places!: number;
 
-    @Column('decimal', { precision: 10, scale: 2 })
+    @Column()
     price!: number;
 
-    @Column({ nullable: true })
-    image_url?: string;
-
-    @Column()
+    @Column({ name: 'organizer_id' })
     organizer_id!: number;
-
-    @ManyToOne(() => User, user => user.createdEvents)
-    creator!: User;
-
-    @OneToMany(() => EventAttendee, attendee => attendee.event)
-    attendees!: EventAttendee[];
 
     @CreateDateColumn()
     created_at!: Date;
 
-    @UpdateDateColumn()
-    updated_at!: Date;
+    @ManyToOne('User', (user: User) => user.createdEvents, {
+        onDelete: 'CASCADE'
+    })
+    @JoinColumn({ name: 'organizer_id' })
+    creator!: User;
+
+    @OneToMany('EventAttendee', (attendee: EventAttendee) => attendee.event)
+    attendees!: EventAttendee[];
 } 

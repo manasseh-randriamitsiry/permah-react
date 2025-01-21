@@ -13,7 +13,7 @@
     "allowJs": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "types": ["node", "jest"],
+    "types": ["node", "jest", "express"],
     "typeRoots": [
       "./node_modules/@types",
       "./src/types"
