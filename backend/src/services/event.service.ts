@@ -6,9 +6,15 @@ import { EventCreate } from '../types/index.js';
 
 export class EventService {
   private async getDataSource() {
-    return process.env.NODE_ENV === 'test' 
+    const dataSource = process.env.NODE_ENV === 'test' 
       ? await getTestDataSource()
       : AppDataSource;
+
+    if (!dataSource) {
+      throw new Error('Database connection not initialized');
+    }
+
+    return dataSource;
   }
 
   private async getEventRepository() {

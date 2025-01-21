@@ -1,23 +1,14 @@
-import { getTestDataSource, closeTestDataSource, resetTestDatabase } from '../../config/test.config.js';
+import { getTestDataSource } from '../../config/test.config.js';
 import { User } from '../../entities/user.entity.js';
 import { Event } from '../../entities/event.entity.js';
 import { hashPassword } from '../../utils/password.utils.js';
 
-export {
-  resetTestDatabase  // Export resetTestDatabase
-};
-
-export const initTestDB = async () => {
-  const dataSource = await getTestDataSource();
-  return dataSource;
-};
-
-export const closeTestDB = async () => {
-  await closeTestDataSource();
-};
-
 export const createTestUser = async () => {
   const dataSource = await getTestDataSource();
+  if (!dataSource) {
+    throw new Error('Test database connection not initialized');
+  }
+
   const userRepository = dataSource.getRepository(User);
   const hashedPassword = await hashPassword('testpass123');
   
@@ -32,6 +23,10 @@ export const createTestUser = async () => {
 
 export const createTestEvent = async (organizerId: number) => {
   const dataSource = await getTestDataSource();
+  if (!dataSource) {
+    throw new Error('Test database connection not initialized');
+  }
+
   const eventRepository = dataSource.getRepository(Event);
   
   const event = eventRepository.create({
@@ -45,4 +40,4 @@ export const createTestEvent = async (organizerId: number) => {
   });
   
   return await eventRepository.save(event);
-}; 
+};

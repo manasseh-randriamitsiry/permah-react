@@ -8,9 +8,15 @@ import { getTestDataSource } from '../config/test.config.js';
 
 export class AuthService {
   private async getDataSource() {
-    return process.env.NODE_ENV === 'test' 
+    const dataSource = process.env.NODE_ENV === 'test' 
       ? await getTestDataSource()
       : AppDataSource;
+
+    if (!dataSource) {
+      throw new Error('Database connection not initialized');
+    }
+
+    return dataSource;
   }
 
   async register(userData: RegisterData) {
