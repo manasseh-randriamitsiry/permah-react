@@ -2,42 +2,58 @@ import { getTestDataSource } from '../../config/test.config.js';
 import { User } from '../../entities/user.entity.js';
 import { Event } from '../../entities/event.entity.js';
 import { hashPassword } from '../../utils/password.utils.js';
+import { AppError } from '../../utils/errors.js';
+import { DataSource } from 'typeorm';
 
-export const createTestUser = async () => {
+const getConnection = async (): Promise<DataSource> => {
   const dataSource = await getTestDataSource();
-  if (!dataSource) {
-    throw new Error('Test database connection not initialized');
+  if (!dataSource || !dataSource.isInitialized) {
+    throw new AppError('Test database connection not initialized', 500);
   }
-
-  const userRepository = dataSource.getRepository(User);
-  const hashedPassword = await hashPassword('testpass123');
-  
-  const user = userRepository.create({
-    name: 'Test User',
-    email: 'test@example.com',
-    password: hashedPassword
-  });
-  
-  return await userRepository.save(user);
+  return dataSource;
 };
 
-export const createTestEvent = async (organizerId: number) => {
-  const dataSource = await getTestDataSource();
-  if (!dataSource) {
-    throw new Error('Test database connection not initialized');
+export const createTestUser = async (email: string = 'test@example.com') => {
+  try {
+    const connection = await getConnection();
+    const userRepository = connection.getRepository(User);
+    const hashedPassword = await hashPassword('testpass123');
+    
+    const user = userRepository.create({
+      name: 'Test User',
+      email: email,
+      password: hashedPassword
+    });
+    
+    return await userRepository.save(user);
+  } catch (error) {
+    console.error('Error creating test user:', error);
+    throw error;
   }
+};
 
-  const eventRepository = dataSource.getRepository(Event);
-  
-  const event = eventRepository.create({
-    title: 'Test Event',
-    description: 'Test Description',
-    date: new Date(),
-    location: 'Test Location',
-    available_places: 100,
-    price: 0,
-    organizer_id: organizerId
-  });
-  
-  return await eventRepository.save(event);
+export const createTestEvent = async (organizerId: string, creatorId: number) => {
+  try {
+    const connection = await getConnection();
+    const eventRepository = connection.getRepository(Event);
+    const now = new Date();
+    
+    const event = eventRepository.create({
+      title: 'Test Event',
+      description: 'Test Description',
+      date: now,
+      location: 'Test Location',
+      available_places: 100,
+      price: 0,
+      organizer: organizerId,
+      creator_id: creatorId,
+      image_url: 'https://example.com/test.jpg',
+      created_at: now
+    });
+    
+    return await eventRepository.save(event);
+  } catch (error) {
+    console.error('Error creating test event:', error);
+    throw error;
+  }
 };

@@ -20,23 +20,29 @@ export class Event {
     location!: string;
 
     @Column()
+    image_url!: string;
+
+    @Column()
     available_places!: number;
 
     @Column()
     price!: number;
 
-    @Column({ name: 'organizer_id' })
-    organizer_id!: number;
+    @Column({ name: 'organizer' })
+    organizer!: string;
+
+    @Column({ name: 'creator_id' })
+    creator_id!: number;
 
     @CreateDateColumn()
     created_at!: Date;
 
-    @ManyToOne('User', (user: User) => user.createdEvents, {
+    @ManyToOne(() => User, (user: User) => user.createdEvents, {
         onDelete: 'CASCADE'
     })
-    @JoinColumn({ name: 'organizer_id' })
+    @JoinColumn({ name: 'creator_id' })
     creator!: User;
 
-    @OneToMany('EventAttendee', (attendee: EventAttendee) => attendee.event)
+    @OneToMany(() => EventAttendee, (attendee: EventAttendee) => attendee.event)
     attendees!: EventAttendee[];
 } 

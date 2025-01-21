@@ -33,5 +33,8 @@ export interface EventCreate {
   location: string;
   available_places: number;
   price: number;
-  organizer_id: number;
+  organizer: string;
+  creator_id: number;
+  image_url: string;
+  created_at: Date;
 } 

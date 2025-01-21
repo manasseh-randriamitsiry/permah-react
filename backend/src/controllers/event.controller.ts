@@ -20,6 +20,23 @@ export class EventController {
         }
     }
 
+    async getMyEvents(req: AuthRequest, res: Response) {
+        try {
+            if (!req.user) {
+                throw new AppError('User not authenticated', 401);
+            }
+
+            const events = await this.eventService.getEventsByCreator(req.user.id);
+            res.json(events);
+        } catch (error) {
+            if (error instanceof AppError) {
+                res.status(error.statusCode).json({ error: error.message });
+            } else {
+                res.status(500).json({ error: 'Internal server error' });
+            }
+        }
+    }
+
     async getEvent(req: Request, res: Response) {
         try {
             const { id } = req.params;
@@ -47,29 +64,34 @@ export class EventController {
                 date, 
                 location, 
                 available_places, 
-                price 
+                price,
+                organizer,
+                image_url
             } = req.body;
 
             if (!req.user) {
                 throw new AppError('User not authenticated', 401);
             }
 
-            const event = this.eventRepository.create({
+            const event = await this.eventService.createEvent({
                 title,
                 description,
                 date: new Date(date),
                 location,
                 available_places: Number(available_places),
                 price: Number(price),
-                organizer_id: req.user.id
+                organizer: organizer || req.user.id.toString(),
+                creator_id: req.user.id,
+                image_url,
+                created_at: new Date()
             });
 
-            const savedEvent = await this.eventRepository.save(event);
-            res.status(201).json(savedEvent);
+            res.status(201).json(event);
         } catch (error) {
             if (error instanceof AppError) {
                 res.status(error.statusCode).json({ error: error.message });
             } else {
+                console.error('Event creation error:', error);
                 res.status(500).json({ error: 'Internal server error' });
             }
         }
@@ -77,35 +99,25 @@ export class EventController {
 
     async updateEvent(req: AuthRequest, res: Response) {
         try {
-            const eventId = req.params.id;
+            const eventId = Number(req.params.id);
             const updateData = {
                 title: req.body.title,
                 description: req.body.description,
-                date: req.body.date,
+                date: req.body.date ? new Date(req.body.date) : undefined,
                 location: req.body.location,
-                available_places: req.body.available_places
+                available_places: req.body.available_places ? Number(req.body.available_places) : undefined,
+                price: req.body.price ? Number(req.body.price) : undefined,
+                image_url: req.body.image_url
             };
 
             if (!req.user) {
                 throw new AppError('User not authenticated', 401);
             }
 
-            const event = await this.eventRepository.findOne({
-                where: { id: parseInt(eventId) }
-            });
-
-            if (!event) {
+            const updatedEvent = await this.eventService.updateEvent(eventId, updateData, req.user.id);
+            if (!updatedEvent) {
                 throw new AppError('Event not found', 404);
             }
-
-            if (event.organizer_id !== req.user.id) {
-                throw new AppError('Not authorized to update this event', 403);
-            }
-
-            const updatedEvent = await this.eventRepository.save({
-                ...event,
-                ...updateData
-            });
 
             res.json(updatedEvent);
         } catch (error) {

@@ -3,6 +3,7 @@ import { EventAttendee } from '../entities/event-attendee.entity.js';
 import { getTestDataSource } from '../config/test.config.js';
 import { AppDataSource } from '../config/typeorm.config.js';
 import { EventCreate } from '../types/index.js';
+import { AppError } from '../utils/errors.js';
 
 export class EventService {
   private async getDataSource() {
@@ -27,15 +28,32 @@ export class EventService {
     return dataSource.getRepository(EventAttendee);
   }
 
-  async createEvent(eventData: Partial<Event>): Promise<Event> {
-    const repository = await this.getEventRepository();
-    const event = repository.create(eventData);
-    return repository.save(event);
+  async createEvent(eventData: EventCreate): Promise<Event> {
+    try {
+      const repository = await this.getEventRepository();
+      const event = repository.create({
+        ...eventData,
+        organizer: eventData.organizer
+      });
+      
+      return await repository.save(event);
+    } catch (error) {
+      console.error('Event creation error:', error);
+      throw new AppError('Failed to create event', 500);
+    }
   }
 
   async getEvents(): Promise<Event[]> {
     const repository = await this.getEventRepository();
     return repository.find({
+      relations: ['creator', 'attendees', 'attendees.user']
+    });
+  }
+
+  async getEventsByCreator(creatorId: number): Promise<Event[]> {
+    const repository = await this.getEventRepository();
+    return repository.find({
+      where: { creator_id: creatorId },
       relations: ['creator', 'attendees', 'attendees.user']
     });
   }
@@ -48,14 +66,34 @@ export class EventService {
     });
   }
 
-  async updateEvent(eventId: number, updateData: Partial<Event>): Promise<Event | null> {
+  async updateEvent(eventId: number, updateData: Partial<Event>, userId?: number): Promise<Event | null> {
     const repository = await this.getEventRepository();
+    const event = await this.getEventById(eventId);
+
+    if (!event) {
+      throw new AppError('Event not found', 404);
+    }
+
+    if (userId && event.creator_id !== userId) {
+      throw new AppError('Not authorized to update this event', 403);
+    }
+
     await repository.update(eventId, updateData);
     return this.getEventById(eventId);
   }
 
-  async deleteEvent(eventId: number): Promise<void> {
+  async deleteEvent(eventId: number, userId?: number): Promise<void> {
     const repository = await this.getEventRepository();
+    const event = await this.getEventById(eventId);
+
+    if (!event) {
+      throw new AppError('Event not found', 404);
+    }
+
+    if (userId && event.creator_id !== userId) {
+      throw new AppError('Not authorized to delete this event', 403);
+    }
+
     await repository.delete(eventId);
   }
 
